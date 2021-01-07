@@ -1,2 +1,2 @@
 # imagesimilarity
-Cosine average distance between two PNG files divided into a user defined grid.
+Chi square average distance between two PNG file histograms divided into a user defined grid.
