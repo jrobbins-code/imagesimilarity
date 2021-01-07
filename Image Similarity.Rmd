@@ -13,7 +13,7 @@ library(magick)
 
 ```
 
-Cosine Similarity Function
+Chi Squre Similarity Function
 
 ```{r}
 chi_distance_hist <- function(img1_pixel_vector,img2_pixel_vector){
