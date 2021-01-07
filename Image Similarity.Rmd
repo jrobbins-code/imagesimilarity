@@ -65,3 +65,156 @@ chi_distance_hist <- function(img1_pixel_vector,img2_pixel_vector){
 }
 ```
 
+Generate Average given import of 2 PNG files from the local working directory.
+
+```{r}
+
+#Input *!* read images into memory
+img1 <- image_read(paste0(getwd(),"/","LibertyNew.png"))
+img2 <- image_read(paste0(getwd(),"/","LibertyOld.png"))
+
+#convert to greyscale
+img1 <- img1 %>%
+  image_quantize(colorspace = 'gray')
+img2 <- img2 %>%
+  image_quantize(colorspace = 'gray')
+
+#Assumes both images have the same dimensionality *!*
+y_fullpixels <- ncol(img1[[1]][1,,])
+ximg_fullpixels <- nrow(img1[[1]][1,,])
+    
+#Input *!* Enter the desired number of image sections
+grid_target <- 32
+
+#calculate grid segmentation, *!* assumes both images have the same dimensionality
+equal_parts <- round(sqrt(grid_target),0)
+grid_outcome <- equal_parts ^2
+
+x_interval <- x_fullpixels %/% equal_parts
+x_remainder <- x_fullpixels %% x_interval
+
+y_interval <- y_fullpixels %/% equal_parts
+y_remainder <- y_fullpixels %% y_interval
+
+#create empty summary data frame for appending, col names will be added after the for loop #https://stackoverflow.com/questions/32712301/create-empty-data-frame-with-column-names-by-assigning-a-string-vector/32712555
+row <- c()
+col <- c()
+range <- c()
+similarity_score <- c()
+
+#loop through grid calculating image similarity metrics and recording to summary data frame
+for (c in 1:equal_parts){
+  if(c<equal_parts){
+    for (r in 1:equal_parts){
+      if (r < equal_parts){
+        #establish geometry
+        y_pixels = y_interval
+        x_pixels = x_interval
+        y_origin = r * y_interval - y_interval
+        x_origin = c * x_interval - x_interval
+        
+        #crop image
+        img1_cropped <- image_crop(img1,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        img2_cropped <- image_crop(img2,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        
+        #get pixel values from cropped images
+        img1_pixel_vector <- as.numeric(img1_cropped[[1]][1,,])
+        img2_pixel_vector <- as.numeric(img2_cropped[[1]][1,,])
+        
+        #calc image similarity for grid unit
+        img_similarity <- chi_distance_hist(img1_pixel_vector, img2_pixel_vector)
+        
+        #record results
+        row <- append(row,r)
+        col <- append(col,c)
+        range <- append(range,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        similarity_score <- append(similarity_score,img_similarity)
+      }
+      else{
+        #establish geometry
+        y_pixels = y_interval+y_remainder
+        x_pixels = x_interval
+        y_origin = r * y_interval - y_interval
+        x_origin = c * x_interval - x_interval
+        
+        #crop image
+        img1_cropped <- image_crop(img1,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        img2_cropped <- image_crop(img2,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        
+        #get pixel values from cropped images
+        img1_pixel_vector <- as.numeric(img1_cropped[[1]][1,,])
+        img2_pixel_vector <- as.numeric(img2_cropped[[1]][1,,])
+        
+        #calc image similarity for grid unit
+        img_similarity <- chi_distance_hist(img1_pixel_vector, img2_pixel_vector)
+        
+        #record results
+        row <- append(row,r)
+        col <- append(col,c)
+        range <- append(range,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        similarity_score <- append(similarity_score,img_similarity)
+      }
+    }
+  }
+  else{
+    for (r in 1:equal_parts){
+      if (r < equal_parts){
+        #establish geometry
+        y_pixels = y_interval
+        x_pixels = x_interval + x_remainder
+        y_origin = r * y_interval - y_interval
+        x_origin = c * x_interval - x_interval
+        
+        #crop image
+        img1_cropped <- image_crop(img1,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        img2_cropped <- image_crop(img2,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        
+        #get pixel values from cropped images
+        img1_pixel_vector <- as.numeric(img1_cropped[[1]][1,,])
+        img2_pixel_vector <- as.numeric(img2_cropped[[1]][1,,])
+        
+        #calc image similarity for grid unit
+        img_similarity <- chi_distance_hist(img1_pixel_vector, img2_pixel_vector)
+        
+        #record results
+        row <- append(row,r)
+        col <- append(col,c)
+        range <- append(range,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        similarity_score <- append(similarity_score,img_similarity)
+      }
+      else{
+        #establish geometry
+        y_pixels = y_interval+y_remainder
+        x_pixels = x_interval+x_remainder
+        y_origin = r * y_interval - y_interval
+        x_origin = c * x_interval - x_interval
+        
+        #crop image
+        img1_cropped <- image_crop(img1,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        img2_cropped <- image_crop(img2,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        
+        #get pixel values from cropped images
+        img1_pixel_vector <- as.numeric(img1_cropped[[1]][1,,])
+        img2_pixel_vector <- as.numeric(img2_cropped[[1]][1,,])
+        
+        #calc image similarity for grid unit
+        img_similarity <- chi_distance_hist(img1_pixel_vector, img2_pixel_vector)
+        
+        #record results
+        row <- append(row,r)
+        col <- append(col,c)
+        range <- append(range,paste0(x_pixels,"X",y_pixels,"+",x_origin,"+",y_origin))
+        similarity_score <- append(similarity_score,img_similarity)
+      }
+    }
+  }
+}
+
+#convert image similarity vector into data frame
+grid_img_similarity <- data.frame(row,col,range,similarity_score)
+
+#calculate average grid similarity score
+mean(grid_img_similarity$similarity_score)
+
+```
+
