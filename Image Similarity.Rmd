@@ -1,0 +1,67 @@
+---
+title: "Image Similarity"
+author: "Jeffrey Robbins"
+date: "1/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(magick)
+
+```
+
+Cosine Similarity Function
+
+```{r}
+chi_distance_hist <- function(img1_pixel_vector,img2_pixel_vector){
+    #create histograms
+    img1_hist <- hist(img1_pixel_vector, breaks=seq(0,256,by=32))
+    img2_hist <- hist(img2_pixel_vector, breaks=seq(0,256,by=32))
+    
+    #confirm if breaks are the same between the two histograms
+    length(img1_hist$breaks) == length(img2_hist$breaks)
+    
+    #generate prob distribution for comparison
+    hist_compare_df <- cbind(img1_hist$counts,img2_hist$counts) %>%
+      data.frame()
+    
+    hist_compare_df <- hist_compare_df %>%
+      rename(
+        Img1Freq = X1,
+        Img2Freq = X2
+      )
+    
+    hist_compare_df <- hist_compare_df %>%
+      mutate(
+        Img1Freq_norm = Img1Freq/sum(Img1Freq),
+        Img2Freq_norm = Img2Freq/sum(Img2Freq),
+      )
+    
+    #calculate chi squared
+    #https://stats.stackexchange.com/questions/184101/comparing-two-histograms-using-chi-square-distance
+    
+    hist_compare_df <- hist_compare_df %>%
+      mutate(
+        "x-y" = Img1Freq_norm - Img2Freq_norm,
+        "x+y" = Img1Freq_norm + Img2Freq_norm
+      )
+    
+    hist_compare_df <- hist_compare_df %>%
+      mutate(
+        "x-y_squared" = `x-y`^2
+      )
+    
+    hist_compare_df <- hist_compare_df %>%
+      mutate(
+        "RowChiOutput" = `x-y_squared`/`x+y`
+      )
+    
+    sqrt(.5 * sum(hist_compare_df$RowChiOutput, na.rm = TRUE))
+    # 0 is no difference
+    # 1 is 100% difference
+}
+```
+
